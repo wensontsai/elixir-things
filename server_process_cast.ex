@@ -8,7 +8,7 @@ defmodule ServerProcess do
 
   defp loop(callback_module, current_state) do
     receive do
-      {request, caller} ->
+      {:call, request, caller} ->
         {response, new_state} = callback_module.handle_call(
           request,
           current_state
@@ -17,12 +17,20 @@ defmodule ServerProcess do
         send(caller, {:response, response})
         loop(callback_module, new_state)
 
+      {:cast, request} ->
+        new_state = callback_module.handle_cast(
+          request, 
+          current_state
+        )
+
+        loop(callback_module, new_state)
+
     end
   end
 
   # call => synchronous
   def call(server_pid, request) do
-    send(server_pid, {request, self})
+    send(server_pid, {:call, request, self})
 
     receive do
       {:response, response} ->
@@ -30,10 +38,15 @@ defmodule ServerProcess do
     end
   end
 
+  # cast => asynchronous
+  def cast(server_pid, request) do
+    send(server_pid, {:cast, request})
+  end
+
 end
 
-defmodule KeyValueStore do
 
+defmodule KeyValueStore do
   # ::
   # callback functions - internal
   # ::
@@ -49,6 +62,10 @@ defmodule KeyValueStore do
     {HashDict.get(state, key), state}
   end
 
+  def handle_cast({:put, key, value}, state) do
+    HashDict.put(state, key, value)
+  end
+
   # :: 
   # INTERFACE FUNCTIONS 
   # :: #
@@ -57,7 +74,7 @@ defmodule KeyValueStore do
   end
 
   def put(pid, key, value) do
-    ServerProcess.call
+    ServerProcess.cast(pid, {:put, key, value})
   end
 
   def get(pid, key) do
