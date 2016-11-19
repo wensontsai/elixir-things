@@ -4,7 +4,8 @@ defmodule Identicon.Image do
   # only things we can place on a struct must be declared
   # if we know properties we are working with, 
   # usually use a struct
-  defstruct hex: nil
+  # initialize all property values
+  defstruct hex: nil, color: nil, grid: nil
 
   # to create the struct
   # %Identicon.Image{}
