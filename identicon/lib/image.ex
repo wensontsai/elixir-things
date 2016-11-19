@@ -5,7 +5,7 @@ defmodule Identicon.Image do
   # if we know properties we are working with, 
   # usually use a struct
   # initialize all property values
-  defstruct hex: nil, color: nil, grid: nil
+  defstruct hex: nil, color: nil, grid: nil, pixel_map: nil
 
   # to create the struct
   # %Identicon.Image{}
