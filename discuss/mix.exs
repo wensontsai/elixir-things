@@ -41,7 +41,8 @@ defmodule Discuss.Mixfile do
      {:cowboy, "~> 1.0"},
      {:ueberauth, "~> 0.3"},
      {:ueberauth_github, "~> 0.4"},
-     {:ueberauth_facebook, "~> 0.6"}]
+     {:ueberauth_facebook, "~> 0.6"},
+     {:distillery, "~> 0.10.1"}]
   end
 
   # Aliases are shortcut or tasks specific to the current project.
