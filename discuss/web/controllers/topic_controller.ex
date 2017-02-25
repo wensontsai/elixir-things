@@ -4,10 +4,35 @@ defmodule Discuss.TopicController do
   # allows for Topic in Topic.changeset etc.
   alias Discuss.Topic
 
+  # this plug will now execute before any handlers
+  # guard clause lets :index pass out of all requests
+  plug Discuss.Plugs.RequireAuth when action in [:new, :create, :edit, :update, :delete]
+
+  # function plug, only using in single module so do this
+  plug :check_topic_owner when action in [:update, :edit, "delete"]
+  
+
   # aliased.. Discuss.Repo.all(Discuss.Topic)
   def index(conn, _params) do
+    # %{user: %Discuss.User{__meta__: #Ecto.Schema.Metadata<:loaded, "users">,
+    # email: "", id: 1,
+    # inserted_at: #Ecto.DateTime<2017-02-25 21:00:58>, provider: "github",
+    # token: "",
+    # updated_at: #Ecto.DateTime<2017-02-25 21:00:58>}}
+    # ^^
+    # IO.inspect(conn.assigns)
+
+    # Ecto module provides Repo
+
     topics = Repo.all(Topic)
     render conn, "index.html", topics: topics
+  end
+
+  def show(conn, %{"id" => topic_id}) do
+    # get! tosses back 404 on fail
+    # or else `nil` is assigned to topic
+    topic = Repo.get!(Topic, topic_id)
+    render conn, "show.html", topic: topic
   end
 
   # controller.new/2 - takes 2 args
@@ -21,12 +46,24 @@ defmodule Discuss.TopicController do
     render conn, "new.html", changeset: changeset
   end
 
+  # now tie topic created to logged in user_id
   def create(conn, %{"topic" => topic}) do
     # validate
     # insert into db
-    changeset = Topic.changeset(%Topic{}, topic)
+    # conn.assigns.user is same as conn.assigns[:user]
 
-    # MAGIC - Ecto orm imported with :controller...
+    # Association API - 
+    # Ecto module ->
+    # take user
+    # pass user to build_assoc
+    # assoc with topic
+
+    changeset = conn.assigns.user
+      |> build_assoc(:topics)
+      # produces Topic Struct, which is piped next
+      |> Topic.changeset(topic)
+
+    # MAGIC - Ecto ORM imported with :controller...
     # Repo.insert does validation..
     # if errors, show them form again... ^
     case Repo.insert(changeset) do
@@ -72,6 +109,23 @@ defmodule Discuss.TopicController do
     conn
     |> put_flash(:info, "Topic Deleted")
     |> redirect(to: topic_path(conn, :index))
+  end
+
+  def check_topic_owner(conn, _params) do
+    # fetch topic out of db
+    # validate user_id
+    # else redirect
+    %{params: %{"id" => topic_id}} = conn
+
+    if Repo.get(Topic, topic_id).user_id == conn.assigns.user.id do
+      conn
+    else 
+      conn
+      |> put_flash(:error, "You cannot edit that")
+      |> redirect(to: topic_path(conn, :index))
+      # break pass loop of conn/plugs, send back to client
+      |> halt()
+    end
   end
 
 end

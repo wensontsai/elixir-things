@@ -4,13 +4,19 @@ defmodule Discuss.User do
   schema "users" do
     field :email, :string
     field :provider, :string
-    add :token, :string
+    field :token, :string
+    # has many topics through Topic model to set up relationship
+    # now User model knows about Topic
+    has_many :topics, Discuss.Topic
+    has_many :comments, Discuss.Comment
 
     timestamps()
   end
 
   def changeset(struct, params \\ %{}) do
     struct
+    |> cast(params, [:email, :provider, :token])
+    |> validate_required([:email, :provider, :token])
   end
 
 end

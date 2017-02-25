@@ -8,6 +8,11 @@ defmodule Discuss.Topic do
   schema "topics" do
     # every field must have :title of type :string
     field :title, :string
+
+    # topic has only one user
+    # set up relationship through User model
+    belongs_to :user, Discuss.User
+    has_many :comments, Discuss.Comment
   end
 
   # NOTE! - MAGIC!
